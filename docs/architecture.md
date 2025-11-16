@@ -582,7 +582,7 @@ At a high level, the multi-module backend build uses:
 - **API documentation**: `springdoc-openapi-starter-webmvc-ui` for Swagger UI.
 - **LLM & vector store**: Spring AI and pgvector dependencies (configured in chat-service module).
 - **Build & packaging**: Gradle 8.x with Jib for container image builds.
-- **Formatting & tooling**: Spotless (google-java-format), Lombok, and JUnit + Testcontainers for integration tests.
+- **Formatting & tooling**: Spotless (palantir-java-format), Lombok, and JUnit + Testcontainers for integration tests.
 
 The Gradle multi-module setup and project properties are defined in `backend/settings.gradle` and `backend/gradle.properties`.
 

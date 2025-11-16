@@ -18,7 +18,7 @@ Production-ready backend microservices platform for storing and managing chat hi
 - Spring AI + Ollama for LLM chat responses
 - JWT authentication (JJWT 0.12.5)
 - Gradle 8.x with Jib for Docker builds
-- Spotless (google-java-format) for code style
+- Spotless (palantir-java-format) for code style
 
 ### Frontend
 - React 18 + TypeScript 5
@@ -36,8 +36,8 @@ Production-ready backend microservices platform for storing and managing chat hi
 ```
 coffee-chat/
 ├── backend/                 # Backend multi-module Gradle project + Docker stack
-│   ├── user-service/        # User authentication & management ✅
-│   ├── chat-service/        # Chat sessions & messages ✅
+│   ├── user-service/        # User authentication & management 
+│   ├── chat-service/        # Chat sessions & messages 
 │   ├── docker-compose.yml   # Multi-container orchestration (backend services + db + nginx)
 │   ├── docker/
 │   │   ├── db/              # Postgres init scripts + host volume
@@ -52,8 +52,6 @@ coffee-chat/
 ```
 
 ## 🛠️ Implementation Status
-
-### ✅ Completed
 - **Root Configuration**: Docker Compose, Nginx, environment files
 - **Multi-Module Gradle Setup**: Backend with shared configuration
 - **User Service**:
@@ -78,6 +76,13 @@ coffee-chat/
 1. **Frontend**: Profile & API key management UI, session rename/favorite/delete, and tests
 2. **End-to-End Testing**: E2E flows across gateway, backend, and frontend
 
+## 🧠 LLM Chat Architecture
+
+- The **Chat Service** uses Spring AI's `ChatClient` to call an Ollama server configured via `OLLAMA_HOST`.
+- The LLM model is configured via `OLLAMA_MODEL` (for example, `gemma3:1b`) in `backend/.env`.
+- Chat messages (USER and AI) are stored in `chat_messages`, with optional RAG `context` metadata.
+- Spring AI's pgvector integration is configured against the shared PostgreSQL database (schema `chat_service`) to support vector storage for retrieval-augmented chat flows.
+
 ## 🏃 Quick Start
 
 ### Prerequisites
@@ -95,7 +100,47 @@ cp .env.example .env
 # Edit .env with your configuration (DB, JWT, LLM/Ollama, rate limiting, pgAdmin)
 ```
 
-2. **Build backend Docker images**:
+2. **Configure LLM / Ollama**
+
+The Chat Service expects an **Ollama** server reachable at the URL in `OLLAMA_HOST` and a model name in `OLLAMA_MODEL` (see `backend/.env.example`). You can run Ollama either on the host or in Docker:
+
+- **Option 1 – Local Ollama on the host (recommended on macOS)**
+  - Install Ollama locally from https://ollama.com/download.
+  - Pull the model on your host machine:
+
+    ```bash
+    ollama pull ${OLLAMA_MODEL}   # e.g. gemma3:1b
+    ```
+
+  - In `backend/.env` set (or keep) the host to:
+
+    ```bash
+    OLLAMA_HOST=http://host.docker.internal:11434
+    ```
+
+  - This allows the `chat-service` container to call the Ollama process running on your laptop via Docker's `host.docker.internal` bridge.
+
+  - **Note (macOS GPU):** Docker Desktop on macOS does **not** expose the host GPU to Linux containers. Running Ollama directly on the host is the only way to use Apple Silicon GPU acceleration; the `llm` container will run CPU-only.
+
+- **Option 2 – Ollama in Docker (`llm` service)**
+  - The `llm` service in `backend/docker-compose.yml` runs Ollama inside a container:
+    - Container name: `llm`
+    - Port: `11435` on the host → `11434` in the container
+    - Model volume: `./docker/llm/models:/root/.ollama`
+
+  - After the stack is up (step 4), pull the model inside the container:
+
+    ```bash
+    docker exec -it llm ollama pull ${OLLAMA_MODEL}
+    ```
+
+  - For this mode, configure `OLLAMA_HOST` in `backend/.env` as:
+
+    ```bash
+    OLLAMA_HOST=http://llm:11434
+    ```
+
+3. **Build backend Docker images**:
 ```bash
 # Build all services
 ./gradlew jibDockerBuild
@@ -116,13 +161,6 @@ docker compose up -d
 - **User Service Swagger**: http://localhost/user/swagger-ui.html
 - **Chat Service Swagger**: http://localhost/chat/swagger-ui.html
 - **PgAdmin**: http://localhost:5050
-
-## 🧠 LLM Chat Architecture
-
-- The **Chat Service** uses Spring AI's `ChatClient` to call an Ollama server configured via `OLLAMA_HOST`.
-- The LLM model is configured via `OLLAMA_MODEL` (for example, `gemma3:1b`) in `backend/.env`.
-- Chat messages (USER and AI) are stored in `chat_messages`, with optional RAG `context` metadata.
-- Spring AI's pgvector integration is configured against the shared PostgreSQL database (schema `chat_service`) to support vector storage for retrieval-augmented chat flows.
 
 ## 📚 API Documentation
 
@@ -232,7 +270,6 @@ MIT License - see LICENSE file for details
 ## 🔗 Resources
 
 - [Architecture Document](docs/architecture.md) - Complete system design
-- [Implementation Status](IMPLEMENTATION_STATUS.md) - Detailed progress tracking
 - [Spring Boot Documentation](https://spring.io/projects/spring-boot)
 - [React Documentation](https://react.dev/)
 
