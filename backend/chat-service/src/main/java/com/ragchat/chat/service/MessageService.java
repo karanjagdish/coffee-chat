@@ -12,7 +12,6 @@ import com.ragchat.chat.repository.ChatSessionRepository;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +36,8 @@ public class MessageService {
     public void generateResponse(ChatMessage message) {
         ChatMessage responseMessage;
         try {
-            String response = chatClient.prompt().user(message.getContent()).call().content();
+            String response =
+                    chatClient.prompt().user(message.getContent()).call().content();
             log.info("Received AI response: {}", response);
             responseMessage = ChatMessage.builder()
                     .session(message.getSession())
@@ -46,7 +46,7 @@ public class MessageService {
                     .context(null)
                     .messageOrder(message.getMessageOrder() + 1)
                     .build();
-        } catch(Exception e) {
+        } catch (Exception e) {
             log.error("Failed to generate response: {}", e.getMessage());
             responseMessage = ChatMessage.builder()
                     .session(message.getSession())
