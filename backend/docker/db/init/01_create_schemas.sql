@@ -1,0 +1,3 @@
+-- Create separate schemas for each service if they do not exist
+CREATE SCHEMA IF NOT EXISTS user_service;
+CREATE SCHEMA IF NOT EXISTS chat_service;

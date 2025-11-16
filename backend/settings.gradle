@@ -1,0 +1,4 @@
+rootProject.name = 'rag-chat-backend'
+
+include 'user-service'
+include 'chat-service'

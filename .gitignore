@@ -19,3 +19,17 @@ gradle-app.setting
 .project
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
+
+# Docker
+.docker
+
+# IDE
+.idea
+.vscode
+
+# Environment
+.env
+
+# Docker database volume
+backend/docker/db/volume/
+backend/docker/llm/models

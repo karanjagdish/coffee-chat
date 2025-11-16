@@ -1,0 +1,121 @@
+plugins {
+    id 'org.springframework.boot' version '3.5.7' apply false
+    id 'io.spring.dependency-management' version '1.1.7' apply false
+    id 'com.diffplug.spotless' version '6.25.0' apply false
+    id 'com.google.cloud.tools.jib' version '3.4.5' apply false
+    id 'java-library'
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'com.diffplug.spotless'
+
+    if (project.name == "user-service" || project.name == "chat-service") {
+        apply plugin: 'org.springframework.boot'
+        apply plugin: 'com.google.cloud.tools.jib'
+
+        // Load environment variables from backend/.env for bootRun
+        tasks.named('bootRun') { task ->
+            def envFile = rootProject.file('.env')
+            def envFromFile = [:]
+
+            if (envFile.exists()) {
+                envFile.eachLine { line ->
+                    def trimmed = line.trim()
+                    if (!trimmed || trimmed.startsWith('#')) {
+                        return
+                    }
+                    def idx = trimmed.indexOf('=')
+                    if (idx > 0) {
+                        def key = trimmed.substring(0, idx).trim()
+                        def value = trimmed.substring(idx + 1).trim()
+
+                        // Strip inline comments (e.g. "86400000  # 24 hours")
+                        def hashIdx = value.indexOf('#')
+                        if (hashIdx >= 0) {
+                            value = value.substring(0, hashIdx).trim()
+                        }
+
+                        envFromFile[key] = value
+                        environment key, value
+                    }
+                }
+            }
+
+            // Derive Spring datasource properties from shared DB_* env if not explicitly set
+            if (!envFromFile['SPRING_DATASOURCE_URL'] && envFromFile['DB_NAME']) {
+                environment 'SPRING_DATASOURCE_URL', "jdbc:postgresql://localhost:5433/${envFromFile['DB_NAME']}"
+            }
+            if (!envFromFile['SPRING_DATASOURCE_USERNAME'] && envFromFile['DB_USER']) {
+                environment 'SPRING_DATASOURCE_USERNAME', envFromFile['DB_USER']
+            }
+            if (!envFromFile['SPRING_DATASOURCE_PASSWORD'] && envFromFile['DB_PASSWORD']) {
+                environment 'SPRING_DATASOURCE_PASSWORD', envFromFile['DB_PASSWORD']
+            }
+        }
+    }
+
+    group = 'com.ragchat'
+    version = '0.0.1-SNAPSHOT'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+
+    configurations {
+        compileOnly {
+            extendsFrom annotationProcessor
+        }
+    }
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        // Spring Boot Starters
+        implementation 'org.springframework.boot:spring-boot-starter-web'
+        implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+        implementation 'org.springframework.boot:spring-boot-starter-security'
+        implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+        // Database
+        runtimeOnly 'org.postgresql:postgresql'
+        implementation 'org.flywaydb:flyway-core'
+        implementation 'org.flywaydb:flyway-database-postgresql'
+
+        // JWT
+        implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+        runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
+        runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
+
+        // Swagger
+        implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
+
+        // Lombok
+        compileOnly 'org.projectlombok:lombok'
+        annotationProcessor 'org.projectlombok:lombok'
+
+        // Testing
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testImplementation 'org.springframework.security:spring-security-test'
+        testImplementation 'org.testcontainers:postgresql:1.19.8'
+        testImplementation 'org.testcontainers:junit-jupiter:1.19.8'
+    }
+
+    spotless {
+        java {
+            target 'src/**/*.java'
+            palantirJavaFormat('2.39.0').formatJavadoc(true)
+            // fix formatting of type annotations
+            formatAnnotations()
+        }
+    }
+
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
+}
