@@ -95,6 +95,9 @@ subprojects {
         // Swagger
         implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
 
+        // Logging to Loki
+        implementation 'com.github.loki4j:loki-logback-appender:2.0.1'
+
         // Lombok
         compileOnly 'org.projectlombok:lombok'
         annotationProcessor 'org.projectlombok:lombok'

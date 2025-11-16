@@ -1,0 +1,44 @@
+<configuration>
+
+    <property name="lokiUrl" value="${LOKI_ENDPOINT:-http://localhost:3100/loki/api/v1/push}" />
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <springProfile name="monitoring">
+        <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
+            <labels>
+                service = chat-service
+                level = %level
+                logger = %logger{36}
+                correlationId = %X{correlationId:-}
+            </labels>
+            <structuredMetadata>off</structuredMetadata>
+            <message>
+                <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%thread] %logger{36} - %msg</pattern>
+            </message>
+            <http>
+                <url>${lokiUrl}</url>
+            </http>
+            <batch>
+                <maxItems>20</maxItems>
+                <timeoutMs>500</timeoutMs>
+            </batch>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE" />
+            <appender-ref ref="LOKI" />
+        </root>
+    </springProfile>
+
+    <springProfile name="!monitoring">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE" />
+        </root>
+    </springProfile>
+
+</configuration>

@@ -28,7 +28,7 @@ function AppShell() {
   const isProfile = location.pathname.startsWith('/app/profile')
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
+    <div className="flex h-screen flex-col bg-slate-950 text-slate-100 overflow-hidden">
       <header className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
         <div className="flex items-center gap-4 text-sm">
           <div className="font-semibold tracking-tight text-slate-100">Coffee Chat</div>
@@ -68,9 +68,9 @@ function AppShell() {
           </button>
         </div>
       </header>
-      <main className="flex flex-1">
+      <main className="flex flex-1 min-h-0">
         {isProfile ? (
-          <section className="flex-1">
+          <section className="flex-1 min-h-0">
             <ProfileView />
           </section>
         ) : (
@@ -88,7 +88,7 @@ function AppShell() {
                 onDeleteSession={deleteSession}
               />
             </aside>
-            <section className="flex-1">
+            <section className="flex-1 min-h-0 flex">
               <ChatWindow sessionId={selectedSession?.id ?? null} sessionName={selectedSession?.sessionName ?? ''} />
             </section>
           </>

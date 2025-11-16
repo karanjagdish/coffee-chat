@@ -92,6 +92,7 @@ frontend/
 ### 🚧 To Be Completed
 1. **Frontend**: Profile & API key management UI, session rename/favorite/delete, and tests
 2. **End-to-End Testing**: E2E flows across gateway, backend, and frontend
+3. **Centralized Logging & Monitoring**: Loki + Grafana stack behind a Docker `monitoring` profile and Spring Boot `monitoring` logging profile (services push logs directly to Loki)
 
 ## 🧠 LLM Chat Architecture
 
@@ -99,6 +100,81 @@ frontend/
 - The LLM model is configured via `OLLAMA_MODEL` (for example, `gemma3:1b`) in `backend/.env`.
 - Chat messages (USER and AI) are stored in `chat_messages`, with optional RAG `context` metadata.
 - Spring AI's pgvector integration is configured against the shared PostgreSQL database (schema `chat_service`) to support vector storage for retrieval-augmented chat flows.
+
+## 📊 Centralized Logging & Monitoring
+
+Centralized logging stack:
+
+- **Loki** for log storage and querying.
+- **Grafana** to explore logs and build dashboards.
+- **Loki4j Logback appender** in each service to push logs directly to Loki over HTTP.
+
+### Docker & Infrastructure
+
+- `backend/docker-compose.yml` defines a `monitoring` profile that adds:
+  - `loki` service (port `3100`).
+  - `grafana` service (port `3001` → Grafana UI).
+- Default dev experience remains unchanged:
+  - `docker compose up -d` → current stack only.
+  - `docker compose --profile monitoring up -d` → stack + Loki + Grafana.
+
+### Application Logging
+
+- Both services use `logback-spring.xml` with a **`monitoring` Spring profile**:
+  - Base appender: console logging (always enabled).
+  - When `monitoring` profile is active:
+    - Add a Loki appender (`com.github.loki4j:loki-logback-appender:2.0.1`).
+    - Logs are sent to `LOKI_ENDPOINT` (default `http://localhost:3100/loki/api/v1/push`, overridden in Docker as `http://loki:3100/loki/api/v1/push`).
+    - Labels are defined on the appender (using `<labels>`), including `service`, `level`, `logger`, and optional `correlationId` from MDC.
+    - Structured metadata is explicitly disabled (`<structuredMetadata>off</structuredMetadata>`) to match the default Loki configuration.
+    - Batch settings are tuned for low latency in development (`maxItems=20`, `timeoutMs=500`) so logs appear quickly in Loki.
+- When `monitoring` profile is disabled, only console logging is used.
+
+### Enabling Monitoring
+
+1. Start the platform with monitoring enabled:
+
+```bash
+cd backend
+docker compose --profile monitoring up -d
+```
+
+2. Ensure services run with the `monitoring` Spring profile (e.g. via env or command-line):
+
+```bash
+SPRING_PROFILES_ACTIVE=monitoring
+```
+
+3. Log into Grafana and add Loki as a data source:
+
+   - Open Grafana at `http://localhost:3001`.
+   - Log in with the default credentials:
+
+     - **User**: `admin`
+     - **Password**: `admin`
+
+   - You may be prompted to change the password; you can keep `admin` for local dev or choose a new one.
+   - Go to **Connections → Data sources** and click **Add data source**.
+   - Choose **Loki** and set:
+
+     - **URL**: `http://loki:3100`
+     - **Access**: `Server`
+
+   - Click **Save & test**. You should see "Data source is working".
+
+4. In Grafana **Explore**, select the Loki data source and query logs, for example:
+
+```logql
+{service="user-service"}
+```
+
+or
+
+```logql
+{service="chat-service"}
+```
+
+to view labeled logs from each service.
 
 ## 🏃 Quick Start
 
@@ -275,7 +351,7 @@ See `backend/.env.example` for all backend configuration options. Copy it to `ba
 
 ## 🤝 Contributing
 
-1. Use Spotless (google-java-format) for backend code (`cd backend && ./gradlew spotlessApply`)
+1. Use Spotless (palantir-java-format) for backend code (`cd backend && ./gradlew spotlessApply`)
 2. Use Prettier for frontend code
 3. Write tests for new features
 4. Update documentation

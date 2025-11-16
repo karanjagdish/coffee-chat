@@ -103,7 +103,7 @@ public class MessageService {
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found"));
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<ChatMessage> messagePage = chatMessageRepository.findBySessionOrderByMessageOrderAsc(session, pageable);
+        Page<ChatMessage> messagePage = chatMessageRepository.findBySessionOrderByMessageOrderDesc(session, pageable);
 
         List<MessageResponse> content =
                 messagePage.getContent().stream().map(this::toResponse).collect(Collectors.toList());

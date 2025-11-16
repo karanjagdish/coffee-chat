@@ -23,7 +23,7 @@ export function useMessages(sessionId: string | null): UseMessagesResult {
   const [error, setError] = useState<string | null>(null)
 
   const [page, setPage] = useState(0)
-  const [size] = useState(50)
+  const [size] = useState(5)
   const [totalElements, setTotalElements] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [hasNext, setHasNext] = useState(false)
@@ -47,12 +47,13 @@ export function useMessages(sessionId: string | null): UseMessagesResult {
         const response = await fetchMessages(sessionId, targetPage, size)
         if (response.success && response.data) {
           const data = response.data
+          const pageMessages = data.content.slice().reverse()
           setPage(data.page)
           setTotalElements(data.totalElements)
           setTotalPages(data.totalPages)
           setHasNext(data.hasNext)
           setHasPrevious(data.hasPrevious)
-          setMessages((prev) => (append ? [...prev, ...data.content] : data.content))
+          setMessages((prev) => (append ? [...pageMessages, ...prev] : pageMessages))
         } else if (response.error) {
           setError(response.error.message)
         }

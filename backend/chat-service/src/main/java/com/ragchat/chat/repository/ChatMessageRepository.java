@@ -13,7 +13,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, UUID> 
 
     List<ChatMessage> findBySessionOrderByMessageOrderAsc(ChatSession session);
 
-    Page<ChatMessage> findBySessionOrderByMessageOrderAsc(ChatSession session, Pageable pageable);
+    Page<ChatMessage> findBySessionOrderByMessageOrderDesc(ChatSession session, Pageable pageable);
 
     long countBySession(ChatSession session);
 
