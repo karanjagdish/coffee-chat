@@ -36,19 +36,36 @@ Production-ready backend microservices platform for storing and managing chat hi
 ```
 coffee-chat/
 ├── backend/                 # Backend multi-module Gradle project + Docker stack
-│   ├── user-service/        # User authentication & management 
-│   ├── chat-service/        # Chat sessions & messages 
-│   ├── docker-compose.yml   # Multi-container orchestration (backend services + db + nginx)
+│   ├── user-service/        # User authentication & management
+│   ├── chat-service/        # Chat sessions & messages
+│   ├── docker-compose.yml   # Multi-container orchestration (backend services + db + nginx + llm)
 │   ├── docker/
 │   │   ├── db/              # Postgres init scripts + host volume
 │   │   └── nginx/           # Nginx gateway configuration
 │   ├── build.gradle         # Parent configuration
 │   ├── settings.gradle      # Module definitions
-│   └── gradlew             # Gradle wrapper
-├── frontend/                # React TypeScript UI (core chat flow implemented)
-├── IMPLEMENTATION_STATUS.md
-├── NEXT_STEPS.md
+│   └── gradlew              # Gradle wrapper
+├── frontend/                # React TypeScript UI (chat, sessions, profile/API key flows)
 └── README.md
+```
+
+### Frontend Project Structure
+
+```
+frontend/
+├── src/
+│   ├── components/   # UI components (chat window, session list, auth, profile/API key)
+│   ├── hooks/        # React hooks for auth, sessions, messages
+│   ├── services/     # API clients, Axios configuration
+│   ├── types/        # Shared TypeScript types for auth/sessions/messages
+│   ├── context/      # React context for auth/session state
+│   ├── App.tsx       # App shell and routing
+│   └── main.tsx      # Vite/React entrypoint
+├── index.html        # Vite HTML shell
+├── vite.config.ts    # Vite configuration
+├── tailwind.config.js
+├── eslint.config.js
+└── tsconfig*.json    # TypeScript configs
 ```
 
 ## 🛠️ Implementation Status
