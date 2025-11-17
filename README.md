@@ -361,7 +361,3 @@ MIT License - see LICENSE file for details
 - [Architecture Document](docs/architecture.md) - Complete system design
 - [Spring Boot Documentation](https://spring.io/projects/spring-boot)
 - [React Documentation](https://react.dev/)
-
----
-
-**Status**: User Service and Chat Service complete, core frontend chat flow implemented.
