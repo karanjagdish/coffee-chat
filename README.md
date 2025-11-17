@@ -68,7 +68,7 @@ frontend/
 └── tsconfig*.json    # TypeScript configs
 ```
 
-## 🛠️ Implementation Status
+## 🛠️ Implementation
 - **Root Configuration**: Docker Compose, Nginx, environment files
 - **Multi-Module Gradle Setup**: Backend with shared configuration
 - **User Service**:
@@ -88,11 +88,7 @@ frontend/
 - **Backend Testing**:
   - Testcontainers-backed integration tests for User and Chat services
   - Controller-level MockMvc tests with negative-path and rate-limit coverage
-
-### 🚧 To Be Completed
-1. **Frontend**: Profile & API key management UI, session rename/favorite/delete, and tests
-2. **End-to-End Testing**: E2E flows across gateway, backend, and frontend
-3. **Centralized Logging & Monitoring**: Loki + Grafana stack behind a Docker `monitoring` profile and Spring Boot `monitoring` logging profile (services push logs directly to Loki)
+- **Centralized Logging & Monitoring**: Loki + Grafana stack behind a Docker `monitoring` profile and Spring Boot `monitoring` logging profile (services push logs directly to Loki)
 
 ## 🧠 LLM Chat Architecture
 
