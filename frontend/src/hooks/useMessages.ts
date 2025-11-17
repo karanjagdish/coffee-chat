@@ -15,12 +15,15 @@ interface UseMessagesResult {
   loadMore: () => Promise<void>
   refresh: () => Promise<void>
   send: (content: string) => Promise<void>
+  sending: boolean
 }
 
 export function useMessages(sessionId: string | null): UseMessagesResult {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [sending, setSending] = useState(false)
 
   const [page, setPage] = useState(0)
   const [size] = useState(5)
@@ -83,16 +86,34 @@ export function useMessages(sessionId: string | null): UseMessagesResult {
   const send = async (content: string) => {
     if (!sessionId || !content.trim()) return
     setError(null)
+    setSending(true)
     try {
+      const trimmed = content.trim()
+
+      const tempMessageId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
+      const tempMessage: Message = {
+        id: tempMessageId,
+        sessionId,
+        sender: 'USER',
+        content: trimmed,
+        context: null,
+        messageOrder: totalElements + 1,
+        createdAt: new Date().toISOString(),
+      }
+
+      setMessages((prev) => [...prev, tempMessage])
+      setTotalElements((prev) => prev + 1)
+
       const response = await sendMessage(sessionId, { sender: 'USER', content })
-      if (response.success && response.data) {
-        setMessages((prev) => [...prev, response.data!])
-        setTotalElements((prev) => prev + 1)
+      if (response.success) {
+        await refresh()
       } else if (response.error) {
         setError(response.error.message)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send message')
+    } finally {
+      setSending(false)
     }
   }
 
@@ -109,5 +130,6 @@ export function useMessages(sessionId: string | null): UseMessagesResult {
     loadMore,
     refresh,
     send,
+    sending,
   }
 }

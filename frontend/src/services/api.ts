@@ -4,6 +4,7 @@ import type { ApiResponse } from '../types/api.types'
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? '',
   withCredentials: false,
+  timeout: 60000,
 })
 
 api.interceptors.request.use((config) => {

@@ -11,7 +11,6 @@ import com.ragchat.chat.repository.ChatMessageRepository;
 import com.ragchat.chat.repository.ChatSessionRepository;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -79,9 +78,7 @@ public class MessageService {
                 .build();
         message = chatMessageRepository.save(message);
 
-        final ChatMessage sendToAi = message;
-
-        CompletableFuture.runAsync(() -> generateResponse(sendToAi));
+        generateResponse(message);
         return toResponse(message);
     }
 

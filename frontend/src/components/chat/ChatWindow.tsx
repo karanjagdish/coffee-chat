@@ -7,12 +7,13 @@ interface ChatWindowProps {
 }
 
 export function ChatWindow({ sessionId, sessionName }: ChatWindowProps) {
-  const { messages, loading, error, send, loadMore, hasNext } = useMessages(sessionId)
+  const { messages, loading, error, send, loadMore, hasNext, sending } = useMessages(sessionId)
   const [draft, setDraft] = useState('')
 
   const containerRef = useRef<HTMLDivElement | null>(null)
   const isLoadingMoreRef = useRef(false)
   const initialLoadRef = useRef(true)
+  const shouldScrollToBottomRef = useRef(false)
 
   const handleScroll = () => {
     const container = containerRef.current
@@ -44,6 +45,11 @@ export function ChatWindow({ sessionId, sessionName }: ChatWindowProps) {
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
+    if (shouldScrollToBottomRef.current) {
+      container.scrollTop = container.scrollHeight
+      shouldScrollToBottomRef.current = false
+      return
+    }
     if (initialLoadRef.current && messages.length > 0) {
       container.scrollTop = container.scrollHeight
       initialLoadRef.current = false
@@ -53,13 +59,9 @@ export function ChatWindow({ sessionId, sessionName }: ChatWindowProps) {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!draft.trim()) return
+    shouldScrollToBottomRef.current = true
     await send(draft.trim())
     setDraft('')
-
-    const container = containerRef.current
-    if (container) {
-      container.scrollTop = container.scrollHeight
-    }
   }
 
   if (!sessionId) {
@@ -99,6 +101,9 @@ export function ChatWindow({ sessionId, sessionName }: ChatWindowProps) {
             <p className="whitespace-pre-wrap break-words">{m.content}</p>
           </div>
         ))}
+        {sending && (
+          <p className="text-xs text-slate-500">Waiting for AI response…</p>
+        )}
         {!loading && messages.length === 0 && !error && (
           <p className="text-xs text-slate-500">No messages yet. Say hi!</p>
         )}
@@ -111,11 +116,11 @@ export function ChatWindow({ sessionId, sessionName }: ChatWindowProps) {
             className="flex-1 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            disabled={loading || !sessionId}
+            disabled={loading || sending || !sessionId}
           />
           <button
             type="submit"
-            disabled={loading || !sessionId || !draft.trim()}
+            disabled={loading || sending || !sessionId || !draft.trim()}
             className="rounded-md bg-emerald-500 px-3 py-2 text-sm font-medium text-slate-950 hover:bg-emerald-400 disabled:opacity-60"
           >
             Send

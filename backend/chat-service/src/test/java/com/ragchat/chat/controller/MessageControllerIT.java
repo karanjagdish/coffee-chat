@@ -106,7 +106,7 @@ class MessageControllerIT {
 
         // Verify persisted in DB
         var stored = chatMessageRepository.findBySessionOrderByMessageOrderAsc(session);
-        assertEquals(1, stored.size());
+        assertEquals(2, stored.size());
         ChatMessage first = stored.get(0);
         assertEquals(MessageSender.USER, first.getSender());
         assertEquals("Hello from chat IT", first.getContent());
