@@ -1,6 +1,9 @@
 package com.ragchat.chat.service;
 
+import com.ragchat.chat.config.ChatHistoryProperties;
 import com.ragchat.chat.exception.ResourceNotFoundException;
+import com.ragchat.chat.model.dto.context.ChatMessageContext;
+import com.ragchat.chat.model.dto.context.ContextDocument;
 import com.ragchat.chat.model.dto.request.CreateMessageRequest;
 import com.ragchat.chat.model.dto.response.MessageResponse;
 import com.ragchat.chat.model.dto.response.PageResponse;
@@ -9,8 +12,11 @@ import com.ragchat.chat.model.entity.ChatSession;
 import com.ragchat.chat.model.enums.MessageSender;
 import com.ragchat.chat.repository.ChatMessageRepository;
 import com.ragchat.chat.repository.ChatSessionRepository;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +41,7 @@ public class MessageService {
 
     private final ChatClient chatClient;
     private final VectorStore vectorStore;
+    private final ChatHistoryProperties chatHistoryProperties;
 
     @Transactional
     public void generateResponse(ChatMessage message) {
@@ -42,15 +49,18 @@ public class MessageService {
         try {
             String userContent = message.getContent();
             List<Document> contextDocuments = retrieveContextDocuments(message, userContent);
-            String prompt = buildPrompt(userContent, contextDocuments);
+            List<ChatMessage> recentMessages = loadRecentMessages(message, chatHistoryProperties.getPreviousMessages());
+            String prompt = buildPrompt(userContent, contextDocuments, recentMessages);
 
             String response = chatClient.prompt().user(prompt).call().content();
             log.info("Received AI response: {}", response);
+
+            ChatMessageContext context = buildContextPayload(contextDocuments);
             responseMessage = ChatMessage.builder()
                     .session(message.getSession())
                     .sender(MessageSender.AI)
                     .content(response)
-                    .context(null)
+                    .context(context)
                     .messageOrder(message.getMessageOrder() + 1)
                     .build();
         } catch (Exception e) {
@@ -64,29 +74,36 @@ public class MessageService {
                     .build();
         }
         chatMessageRepository.save(responseMessage);
+
+        indexChatMessage(responseMessage);
     }
 
     private List<Document> retrieveContextDocuments(ChatMessage message, String userContent) {
         List<Document> contextDocuments = Collections.emptyList();
         try {
+            String filter = "sessionId == '" + message.getSession().getId() + "' && source == 'session-documents'";
             SearchRequest searchRequest = SearchRequest.builder()
                     .query(userContent)
                     .topK(5)
-                    .filterExpression("sessionId == '" + message.getSession().getId() + "'")
+                    .filterExpression(filter)
                     .build();
 
             contextDocuments = vectorStore.similaritySearch(searchRequest);
         } catch (Exception e) {
-            log.warn("Vector search failed for session {}: {}", message.getSession().getId(), e.getMessage());
+            log.warn(
+                    "Vector search failed for session {}: {}",
+                    message.getSession().getId(),
+                    e.getMessage());
         }
         return contextDocuments;
     }
 
-    private String buildPrompt(String userContent, List<Document> contextDocuments) {
+    private String buildPrompt(String userContent, List<Document> contextDocuments, List<ChatMessage> recentMessages) {
         StringBuilder promptBuilder = new StringBuilder();
+
         if (contextDocuments != null && !contextDocuments.isEmpty()) {
             promptBuilder.append(
-                    "You are a helpful assistant. Use the following context to answer the user's question. If the context is not relevant, you may also use your general knowledge, but prefer the context when possible.\n\n");
+                    "You are a helpful assistant. Use the following context and recent conversation to answer the user's question. If the context is not relevant, you may also use your general knowledge, but prefer the provided context when possible.\n\n");
             promptBuilder.append("Context:\n");
 
             int maxChars = 3000;
@@ -103,18 +120,135 @@ public class MessageService {
                 if (snippet.length() + used > maxChars) {
                     snippet = snippet.substring(0, maxChars - used);
                 }
-                promptBuilder.append("[").append(index).append("] ").append(snippet).append("\n\n");
+                promptBuilder
+                        .append("[")
+                        .append(index)
+                        .append("] ")
+                        .append(snippet)
+                        .append("\n\n");
                 used += snippet.length();
                 index++;
             }
-
-            promptBuilder.append("User question:\n");
-            promptBuilder.append(userContent);
-        } else {
-            promptBuilder.append(userContent);
         }
 
+        if (recentMessages != null && !recentMessages.isEmpty()) {
+            promptBuilder.append(
+                    "Recent conversation (lines starting with 'User:' are the human, 'Assistant:' are you):\n");
+            for (ChatMessage m : recentMessages) {
+                String role = m.getSender() == MessageSender.USER ? "User" : "Assistant";
+                promptBuilder.append(role).append(": ").append(m.getContent()).append("\n");
+            }
+            promptBuilder.append("\n");
+        }
+
+        promptBuilder.append("User question:\n");
+        promptBuilder.append(userContent);
+
         return promptBuilder.toString();
+    }
+
+    private List<ChatMessage> loadRecentMessages(ChatMessage message, int limit) {
+        List<ChatMessage> allMessages =
+                chatMessageRepository.findBySessionOrderByMessageOrderAsc(message.getSession());
+        if (allMessages.isEmpty() || limit <= 0) {
+            return Collections.emptyList();
+        }
+
+        List<ChatMessage> priorMessages = new ArrayList<>();
+        for (ChatMessage m : allMessages) {
+            if (m.getMessageOrder() != null
+                    && message.getMessageOrder() != null
+                    && m.getMessageOrder() < message.getMessageOrder()) {
+                priorMessages.add(m);
+            }
+        }
+
+        if (priorMessages.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        int userCount = 0;
+        int assistantCount = 0;
+        List<ChatMessage> selected = new ArrayList<>();
+
+        for (int i = priorMessages.size() - 1; i >= 0; i--) {
+            ChatMessage m = priorMessages.get(i);
+            if (m.getSender() == MessageSender.USER) {
+                if (userCount >= limit) {
+                    continue;
+                }
+                selected.add(m);
+                userCount++;
+            } else if (m.getSender() == MessageSender.AI) {
+                if (assistantCount >= limit) {
+                    continue;
+                }
+                selected.add(m);
+                assistantCount++;
+            }
+
+            if (userCount >= limit && assistantCount >= limit) {
+                break;
+            }
+        }
+
+        Collections.reverse(selected);
+        return selected;
+    }
+
+    private ChatMessageContext buildContextPayload(List<Document> contextDocuments) {
+        if (contextDocuments == null || contextDocuments.isEmpty()) {
+            return null;
+        }
+
+        List<ContextDocument> documents = new ArrayList<>();
+        for (Document doc : contextDocuments) {
+            Map<String, Object> metadata = doc.getMetadata();
+
+            String sessionId = metadata != null ? (String) metadata.get("sessionId") : null;
+            String documentId = metadata != null ? (String) metadata.get("documentId") : null;
+            String filename = metadata != null ? (String) metadata.get("filename") : null;
+
+            Integer chunkIndex = null;
+            if (metadata != null && metadata.get("chunkIndex") != null) {
+                Object idx = metadata.get("chunkIndex");
+                if (idx instanceof Number number) {
+                    chunkIndex = number.intValue();
+                } else if (idx instanceof String s) {
+                    try {
+                        chunkIndex = Integer.parseInt(s);
+                    } catch (NumberFormatException ignored) {
+                        // ignore invalid chunk index
+                    }
+                }
+            }
+
+            String snippet = doc.getText();
+            if (snippet != null) {
+                int maxSnippetLength = 500;
+                if (snippet.length() > maxSnippetLength) {
+                    snippet = snippet.substring(0, maxSnippetLength);
+                }
+            }
+
+            Double score = doc.getScore();
+
+            ContextDocument contextDocument = ContextDocument.builder()
+                    .sessionId(sessionId)
+                    .documentId(documentId)
+                    .filename(filename)
+                    .chunkIndex(chunkIndex)
+                    .snippet(snippet)
+                    .score(score)
+                    .build();
+
+            documents.add(contextDocument);
+        }
+
+        return ChatMessageContext.builder()
+                .source("session-documents")
+                .documents(documents)
+                .build();
     }
 
     @Transactional
@@ -132,13 +266,37 @@ public class MessageService {
                 .session(session)
                 .sender(request.sender())
                 .content(request.content())
-                .context(request.context())
+                .context(null)
                 .messageOrder(nextOrder)
                 .build();
         message = chatMessageRepository.save(message);
 
+        indexChatMessage(message);
+
         generateResponse(message);
         return toResponse(message);
+    }
+
+    private void indexChatMessage(ChatMessage message) {
+        try {
+            if (message.getContent() == null || message.getContent().isBlank()) {
+                return;
+            }
+
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("sessionId", message.getSession().getId().toString());
+            if (message.getId() != null) {
+                metadata.put("messageId", message.getId().toString());
+            }
+            metadata.put("sender", message.getSender().name());
+            metadata.put("messageOrder", message.getMessageOrder());
+            metadata.put("source", "chat-message");
+
+            Document document = new Document(message.getContent(), metadata);
+            vectorStore.add(List.of(document));
+        } catch (Exception e) {
+            log.warn("Failed to index chat message {} into vector store: {}", message.getId(), e.getMessage());
+        }
     }
 
     @Transactional(readOnly = true)
@@ -169,9 +327,6 @@ public class MessageService {
                 message.getId(),
                 message.getSender(),
                 message.getContent(),
-                (message.getContext() instanceof java.util.Map)
-                        ? (java.util.Map<String, Object>) message.getContext()
-                        : null,
                 message.getMessageOrder(),
                 message.getCreatedAt());
     }

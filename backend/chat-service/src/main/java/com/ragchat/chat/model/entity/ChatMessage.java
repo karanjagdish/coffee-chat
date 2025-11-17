@@ -1,5 +1,6 @@
 package com.ragchat.chat.model.entity;
 
+import com.ragchat.chat.model.dto.context.ChatMessageContext;
 import com.ragchat.chat.model.enums.MessageSender;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -49,7 +50,7 @@ public class ChatMessage extends AuditableEntity {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "context", columnDefinition = "jsonb")
-    private Object context;
+    private ChatMessageContext context;
 
     @Column(name = "message_order", nullable = false)
     private Integer messageOrder;

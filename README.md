@@ -93,9 +93,30 @@ frontend/
 ## 🧠 LLM Chat Architecture
 
 - The **Chat Service** uses Spring AI's `ChatClient` to call an Ollama server configured via `OLLAMA_HOST`.
-- The LLM model is configured via `OLLAMA_MODEL` (for example, `gemma3:1b`) in `backend/.env`.
+- The **chat model** is configured via `OLLAMA_MODEL` (for example, `gemma3:1b`) in `backend/.env` and is responsible for generating natural-language answers.
+- The **embedding model** is configured via `OLLAMA_EMBEDDING_MODEL` (for example, `embeddinggemma`) and is used to turn document chunks into dense vectors for similarity search.
+- Spring AI's **pgvector** integration is configured against the shared PostgreSQL database (schema `chat_service`) to store and query those vectors for Retrieval-Augmented Generation (RAG).
 - Chat messages (USER and AI) are stored in `chat_messages`, with optional RAG `context` metadata.
-- Spring AI's pgvector integration is configured against the shared PostgreSQL database (schema `chat_service`) to support vector storage for retrieval-augmented chat flows.
+
+High-level RAG flow:
+
+1. **Upload & storage**
+   - The user uploads a document (e.g. PDF) for a specific chat session.
+   - The Chat Service persists metadata in `session_documents` and stores the raw file under `storage/session-docs/{sessionId}/`.
+
+2. **Async indexing with embeddings**
+   - A background task uses Apache Tika to extract text from the uploaded file.
+   - The text is split into overlapping chunks; each chunk becomes a Spring AI `Document` with metadata such as `sessionId`, `documentId`, `filename`, and `chunkIndex`.
+   - The embedding model (`OLLAMA_EMBEDDING_MODEL`) is used by Spring AI to embed each chunk, and the resulting vectors are written into the pgvector-backed `VectorStore`.
+
+3. **Retrieval at query time**
+   - When the user asks a question in a session, the Chat Service performs a similarity search against the `VectorStore`, using the question as the query and filtering by `sessionId` so only that session's documents are considered.
+   - The top-k matching chunks are gathered as context.
+
+4. **Prompt construction & LLM answer**
+   - The retrieved chunks are formatted into a `Context:` section and combined with the user's question into a single prompt.
+   - Spring AI's `ChatClient` sends this prompt to the chat model (`OLLAMA_MODEL`), which generates the answer.
+   - The AI response is saved as a message and returned to the frontend; the user sees answers grounded in their uploaded documents when relevant.
 
 ## 📊 Centralized Logging & Monitoring
 

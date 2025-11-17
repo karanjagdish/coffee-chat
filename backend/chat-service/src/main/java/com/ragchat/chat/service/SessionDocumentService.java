@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -200,11 +201,12 @@ public class SessionDocumentService {
             int end = Math.min(length, index + chunkSize);
             String chunk = text.substring(index, end).trim();
             if (!chunk.isEmpty()) {
-                Map<String, Object> metadata = Map.of(
-                        "sessionId", document.getSession().getId().toString(),
-                        "documentId", document.getId().toString(),
-                        "filename", document.getOriginalFilename(),
-                        "chunkIndex", chunkIndex);
+                Map<String, Object> metadata = new HashMap<>();
+                metadata.put("sessionId", document.getSession().getId().toString());
+                metadata.put("documentId", document.getId().toString());
+                metadata.put("filename", document.getOriginalFilename());
+                metadata.put("chunkIndex", chunkIndex);
+                metadata.put("source", "session-documents");
                 result.add(new Document(chunk, metadata));
                 chunkIndex++;
             }

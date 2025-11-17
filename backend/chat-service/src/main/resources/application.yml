@@ -53,3 +53,7 @@ rate-limit:
   capacity: ${RATE_LIMIT_CAPACITY:100}
   refill-tokens: ${RATE_LIMIT_REFILL_TOKENS:100}
   refill-duration-minutes: ${RATE_LIMIT_REFILL_DURATION:1}
+
+chat:
+  history:
+    previous-messages: ${CHAT_HISTORY_PREVIOUS_MESSAGES:3}

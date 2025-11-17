@@ -66,7 +66,7 @@ class MessageServiceIT {
 
         session = chatSessionRepository.save(session);
 
-        CreateMessageRequest request = new CreateMessageRequest(MessageSender.USER, "Hello from IT", null);
+        CreateMessageRequest request = new CreateMessageRequest(MessageSender.USER, "Hello from IT");
 
         MessageResponse response = messageService.createMessage(userId, session.getId(), request);
 
@@ -90,11 +90,9 @@ class MessageServiceIT {
 
         session = chatSessionRepository.save(session);
 
-        messageService.createMessage(
-                userId, session.getId(), new CreateMessageRequest(MessageSender.USER, "First", null));
+        messageService.createMessage(userId, session.getId(), new CreateMessageRequest(MessageSender.USER, "First"));
         Thread.sleep(1000);
-        messageService.createMessage(
-                userId, session.getId(), new CreateMessageRequest(MessageSender.USER, "Second", null));
+        messageService.createMessage(userId, session.getId(), new CreateMessageRequest(MessageSender.USER, "Second"));
 
         PageResponse<MessageResponse> responses = messageService.getMessagesPage(userId, session.getId(), 0, 10);
 
