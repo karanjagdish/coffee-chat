@@ -101,9 +101,10 @@ public class MessageService {
     private String buildPrompt(String userContent, List<Document> contextDocuments, List<ChatMessage> recentMessages) {
         StringBuilder promptBuilder = new StringBuilder();
 
+        promptBuilder.append(
+                "You are a helpful assistant. Use any provided context and recent conversation to answer the user's question. If the context is not relevant, you may also use your general knowledge, but prefer the provided context when possible.\n");
+
         if (contextDocuments != null && !contextDocuments.isEmpty()) {
-            promptBuilder.append(
-                    "You are a helpful assistant. Use the following context and recent conversation to answer the user's question. If the context is not relevant, you may also use your general knowledge, but prefer the provided context when possible.\n\n");
             promptBuilder.append("Context:\n");
 
             int maxChars = 3000;
@@ -143,6 +144,10 @@ public class MessageService {
 
         promptBuilder.append("User question:\n");
         promptBuilder.append(userContent);
+        promptBuilder.append("\n\n");
+        promptBuilder.append(
+                "When you answer, respond only with the answer text itself. Do not include any speaker labels like 'Assistant:' or 'User:' in your response.\n\n");
+
 
         return promptBuilder.toString();
     }
