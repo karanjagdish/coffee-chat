@@ -40,7 +40,7 @@ public class SecurityConfig {
                         .anyRequest()
                         .authenticated())
                 .addFilterBefore(jwtValidationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(rateLimitInterceptor, JwtValidationFilter.class);
+                .addFilterAfter(rateLimitInterceptor, JwtValidationFilter.class);
 
         return http.build();
     }
