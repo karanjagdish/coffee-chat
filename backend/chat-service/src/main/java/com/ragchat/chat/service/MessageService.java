@@ -86,17 +86,6 @@ public class MessageService {
     }
 
     @Transactional(readOnly = true)
-    public List<MessageResponse> getMessages(UUID userId, UUID sessionId) {
-        ChatSession session = chatSessionRepository
-                .findByIdAndUserId(sessionId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found"));
-
-        return chatMessageRepository.findBySessionOrderByMessageOrderAsc(session).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
     public PageResponse<MessageResponse> getMessagesPage(UUID userId, UUID sessionId, int page, int size) {
         ChatSession session = chatSessionRepository
                 .findByIdAndUserId(sessionId, userId)

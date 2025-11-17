@@ -18,6 +18,8 @@ import com.ragchat.chat.repository.ChatMessageRepository;
 import com.ragchat.chat.repository.ChatSessionRepository;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,6 +60,18 @@ class MessageControllerIT {
 
     @MockitoBean
     private UserServiceClient userServiceClient;
+
+    @BeforeEach
+    void setUp() {
+        chatSessionRepository.deleteAll();
+        chatMessageRepository.deleteAll();
+    }
+
+    @AfterEach
+    void tearDown() {
+        chatSessionRepository.deleteAll();
+        chatMessageRepository.deleteAll();
+    }
 
     @Test
     void createMessage_persistsToDatabase() throws Exception {
@@ -145,8 +159,8 @@ class MessageControllerIT {
 
         assertTrue(contentNode.isArray());
         assertEquals(2, contentNode.size());
-        assertEquals("First message", contentNode.get(0).path("content").asText());
-        assertEquals("Second message", contentNode.get(1).path("content").asText());
+        assertEquals("Second message", contentNode.get(0).path("content").asText());
+        assertEquals("First message", contentNode.get(1).path("content").asText());
     }
 
     @Nested
