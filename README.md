@@ -195,10 +195,13 @@ The Chat Service expects an **Ollama** server reachable at the URL in `OLLAMA_HO
 
 - **Option 1 – Local Ollama on the host (recommended on macOS)**
   - Install Ollama locally from https://ollama.com/download.
-  - Pull the model on your host machine:
+  - Pull the chat model on your host machine:
 
     ```bash
     ollama pull ${OLLAMA_MODEL}   # e.g. gemma3:1b
+
+    # Also pull the embedding model used for document indexing (RAG)
+    ollama pull ${OLLAMA_EMBEDDING_MODEL}
     ```
 
   - In `backend/.env` set (or keep) the host to:
@@ -217,10 +220,11 @@ The Chat Service expects an **Ollama** server reachable at the URL in `OLLAMA_HO
     - Port: `11435` on the host → `11434` in the container
     - Model volume: `./docker/llm/models:/root/.ollama`
 
-  - After the stack is up (step 4), pull the model inside the container:
+  - After the stack is up (step 4), pull the chat and embedding models inside the container:
 
     ```bash
     docker exec -it llm ollama pull ${OLLAMA_MODEL}
+    docker exec -it llm ollama pull ${OLLAMA_EMBEDDING_MODEL}
     ```
 
   - For this mode, configure `OLLAMA_HOST` in `backend/.env` as:
@@ -343,7 +347,7 @@ See `backend/.env.example` for all backend configuration options. Copy it to `ba
 - `USER_DB_SCHEMA`, `CHAT_DB_SCHEMA`: Per-service schemas in the shared DB
 - `JWT_SECRET`: Base64-encoded secret key for JWT signing
 - `RATE_LIMIT_*`: Rate limiting configuration for Chat Service
-- `OLLAMA_MODEL`, `OLLAMA_HOST`: LLM model and host used by Chat Service via Spring AI + Ollama
+- `OLLAMA_MODEL`, `OLLAMA_EMBEDDING_MODEL`, `OLLAMA_HOST`: chat and embedding models and host used by Chat Service via Spring AI + Ollama
 
 ## 🤝 Contributing
 

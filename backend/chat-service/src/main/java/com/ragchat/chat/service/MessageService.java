@@ -9,12 +9,16 @@ import com.ragchat.chat.model.entity.ChatSession;
 import com.ragchat.chat.model.enums.MessageSender;
 import com.ragchat.chat.repository.ChatMessageRepository;
 import com.ragchat.chat.repository.ChatSessionRepository;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,13 +34,17 @@ public class MessageService {
     private final ChatMessageRepository chatMessageRepository;
 
     private final ChatClient chatClient;
+    private final VectorStore vectorStore;
 
     @Transactional
     public void generateResponse(ChatMessage message) {
         ChatMessage responseMessage;
         try {
-            String response =
-                    chatClient.prompt().user(message.getContent()).call().content();
+            String userContent = message.getContent();
+            List<Document> contextDocuments = retrieveContextDocuments(message, userContent);
+            String prompt = buildPrompt(userContent, contextDocuments);
+
+            String response = chatClient.prompt().user(prompt).call().content();
             log.info("Received AI response: {}", response);
             responseMessage = ChatMessage.builder()
                     .session(message.getSession())
@@ -56,6 +64,57 @@ public class MessageService {
                     .build();
         }
         chatMessageRepository.save(responseMessage);
+    }
+
+    private List<Document> retrieveContextDocuments(ChatMessage message, String userContent) {
+        List<Document> contextDocuments = Collections.emptyList();
+        try {
+            SearchRequest searchRequest = SearchRequest.builder()
+                    .query(userContent)
+                    .topK(5)
+                    .filterExpression("sessionId == '" + message.getSession().getId() + "'")
+                    .build();
+
+            contextDocuments = vectorStore.similaritySearch(searchRequest);
+        } catch (Exception e) {
+            log.warn("Vector search failed for session {}: {}", message.getSession().getId(), e.getMessage());
+        }
+        return contextDocuments;
+    }
+
+    private String buildPrompt(String userContent, List<Document> contextDocuments) {
+        StringBuilder promptBuilder = new StringBuilder();
+        if (contextDocuments != null && !contextDocuments.isEmpty()) {
+            promptBuilder.append(
+                    "You are a helpful assistant. Use the following context to answer the user's question. If the context is not relevant, you may also use your general knowledge, but prefer the context when possible.\n\n");
+            promptBuilder.append("Context:\n");
+
+            int maxChars = 3000;
+            int used = 0;
+            int index = 1;
+            for (Document doc : contextDocuments) {
+                String snippet = doc.getText();
+                if (snippet == null || snippet.isBlank()) {
+                    continue;
+                }
+                if (used >= maxChars) {
+                    break;
+                }
+                if (snippet.length() + used > maxChars) {
+                    snippet = snippet.substring(0, maxChars - used);
+                }
+                promptBuilder.append("[").append(index).append("] ").append(snippet).append("\n\n");
+                used += snippet.length();
+                index++;
+            }
+
+            promptBuilder.append("User question:\n");
+            promptBuilder.append(userContent);
+        } else {
+            promptBuilder.append(userContent);
+        }
+
+        return promptBuilder.toString();
     }
 
     @Transactional

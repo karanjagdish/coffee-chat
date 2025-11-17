@@ -91,8 +91,7 @@ class SessionDocumentControllerIT {
         UUID userId = UUID.randomUUID();
 
         when(userServiceClient.validateToken("valid-token"))
-                .thenReturn(
-                        new UserValidationResponse(userId, "doc-it-user", "doc@example.com", LocalDateTime.now()));
+                .thenReturn(new UserValidationResponse(userId, "doc-it-user", "doc@example.com", LocalDateTime.now()));
 
         ChatSession session = ChatSession.builder()
                 .userId(userId)
@@ -132,8 +131,7 @@ class SessionDocumentControllerIT {
         UUID userId = UUID.randomUUID();
 
         when(userServiceClient.validateToken("valid-token"))
-                .thenReturn(
-                        new UserValidationResponse(userId, "doc-it-user", "doc@example.com", LocalDateTime.now()));
+                .thenReturn(new UserValidationResponse(userId, "doc-it-user", "doc@example.com", LocalDateTime.now()));
 
         ChatSession session = ChatSession.builder()
                 .userId(userId)
@@ -174,8 +172,7 @@ class SessionDocumentControllerIT {
         UUID userId = UUID.randomUUID();
 
         when(userServiceClient.validateToken("valid-token"))
-                .thenReturn(
-                        new UserValidationResponse(userId, "doc-it-user", "doc@example.com", LocalDateTime.now()));
+                .thenReturn(new UserValidationResponse(userId, "doc-it-user", "doc@example.com", LocalDateTime.now()));
 
         ChatSession session = ChatSession.builder()
                 .userId(userId)
@@ -211,13 +208,12 @@ class SessionDocumentControllerIT {
             return;
         }
         try (var paths = Files.walk(root)) {
-            paths.sorted((a, b) -> b.compareTo(a))
-                    .forEach(path -> {
-                        try {
-                            Files.deleteIfExists(path);
-                        } catch (IOException ignored) {
-                        }
-                    });
+            paths.sorted((a, b) -> b.compareTo(a)).forEach(path -> {
+                try {
+                    Files.deleteIfExists(path);
+                } catch (IOException ignored) {
+                }
+            });
         } catch (IOException ignored) {
         }
     }

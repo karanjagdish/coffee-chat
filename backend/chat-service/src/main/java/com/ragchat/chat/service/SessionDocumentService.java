@@ -97,9 +97,8 @@ public class SessionDocumentService {
     @Async
     @Transactional
     public void indexDocumentAsync(UUID documentId) {
-        SessionDocument document = sessionDocumentRepository
-                .findById(documentId)
-                .orElse(null);
+        SessionDocument document =
+                sessionDocumentRepository.findById(documentId).orElse(null);
         if (document == null) {
             log.warn("SessionDocument with id {} not found for indexing", documentId);
             return;

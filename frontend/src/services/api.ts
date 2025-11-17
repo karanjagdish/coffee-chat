@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { type AxiosRequestConfig } from 'axios'
 import type { ApiResponse } from '../types/api.types'
 
 const api = axios.create({
@@ -21,8 +21,8 @@ export async function get<T>(url: string) {
   return response.data
 }
 
-export async function post<T, B = unknown>(url: string, body: B) {
-  const response = await api.post<ApiResponse<T>>(url, body)
+export async function post<T, B = unknown>(url: string, body: B, config?: AxiosRequestConfig) {
+  const response = await api.post<ApiResponse<T>>(url, body, config)
   return response.data
 }
 
