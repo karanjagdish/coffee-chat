@@ -31,6 +31,11 @@ export async function put<T, B = unknown>(url: string, body?: B) {
   return response.data
 }
 
+export async function patch<T, B = unknown>(url: string, body?: B) {
+  const response = await api.patch<ApiResponse<T>>(url, body)
+  return response.data
+}
+
 export async function del<T>(url: string) {
   const response = await api.delete<ApiResponse<T>>(url)
   return response.data

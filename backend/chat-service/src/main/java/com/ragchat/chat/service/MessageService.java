@@ -276,6 +276,8 @@ public class MessageService {
                 .build();
         message = chatMessageRepository.save(message);
 
+        log.debug("Created message with id: {}", message.getId());
+
         indexChatMessage(message);
 
         generateResponse(message);
@@ -299,6 +301,7 @@ public class MessageService {
 
             Document document = new Document(message.getContent(), metadata);
             vectorStore.add(List.of(document));
+            log.debug("Indexed chat message with id: {}", message.getId());
         } catch (Exception e) {
             log.warn("Failed to index chat message {} into vector store: {}", message.getId(), e.getMessage());
         }

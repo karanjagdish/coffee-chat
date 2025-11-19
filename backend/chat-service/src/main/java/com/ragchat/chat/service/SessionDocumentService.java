@@ -42,6 +42,7 @@ public class SessionDocumentService {
 
     @Transactional
     public SessionDocumentResponse uploadDocument(UUID userId, UUID sessionId, MultipartFile file) {
+        log.info("Uploading document for user");
         ChatSession session = chatSessionRepository
                 .findByIdAndUserId(sessionId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session not found"));
@@ -53,6 +54,7 @@ public class SessionDocumentService {
         String originalFilename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "document";
         String contentType = file.getContentType() != null ? file.getContentType() : "application/octet-stream";
         long sizeBytes = file.getSize();
+        log.info("Document file size (in KB): {}", sizeBytes / 1024);
 
         SessionDocument document = SessionDocument.builder()
                 .session(session)
@@ -86,11 +88,15 @@ public class SessionDocumentService {
             throw new RuntimeException("Failed to save uploaded file", e);
         }
 
+        log.info("File upload succeeded");
+
         document.setStoragePath(targetPath.toString());
         document.setIndexingStatus(SessionDocumentStatus.PROCESSING);
         document = sessionDocumentRepository.save(document);
 
         indexDocumentAsync(document.getId());
+
+        log.info("Document indexing started");
 
         return toResponse(document);
     }
@@ -130,6 +136,7 @@ public class SessionDocumentService {
             document.setIndexingStatus(SessionDocumentStatus.READY);
             document.setErrorMessage(null);
             sessionDocumentRepository.save(document);
+            log.info("Document indexing completed");
         } catch (Exception e) {
             log.error("Failed to index document {}", documentId, e);
             document.setIndexingStatus(SessionDocumentStatus.FAILED);

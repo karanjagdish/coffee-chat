@@ -1,5 +1,6 @@
 package com.ragchat.user.config;
 
+import com.ragchat.user.logging.MdcLoggingFilter;
 import com.ragchat.user.security.ApiKeyAuthenticationFilter;
 import com.ragchat.user.security.JwtAuthenticationFilter;
 import java.util.Arrays;
@@ -27,6 +28,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final ApiKeyAuthenticationFilter apiKeyAuthenticationFilter;
+    private final MdcLoggingFilter mdcLoggingFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -44,7 +46,8 @@ public class SecurityConfig {
                         .anyRequest()
                         .authenticated())
                 .addFilterBefore(apiKeyAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthenticationFilter, ApiKeyAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, ApiKeyAuthenticationFilter.class)
+                .addFilterAfter(mdcLoggingFilter, ApiKeyAuthenticationFilter.class);
 
         return http.build();
     }
@@ -58,7 +61,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-API-KEY"));
         configuration.setMaxAge(3600L);
 

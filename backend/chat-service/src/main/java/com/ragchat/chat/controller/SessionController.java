@@ -14,14 +14,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/sessions")
@@ -58,7 +51,7 @@ public class SessionController {
         return ResponseEntity.ok(ApiResponse.success(session));
     }
 
-    @PutMapping("/{id}/rename")
+    @PatchMapping("/{id}/rename")
     @Operation(summary = "Rename a chat session")
     public ResponseEntity<ApiResponse<SessionResponse>> renameSession(
             @AuthenticationPrincipal ChatUserPrincipal principal,
@@ -69,7 +62,7 @@ public class SessionController {
         return ResponseEntity.ok(ApiResponse.success(session));
     }
 
-    @PutMapping("/{id}/favorite")
+    @PatchMapping("/{id}/favorite")
     @Operation(summary = "Toggle favorite status for a chat session")
     public ResponseEntity<ApiResponse<SessionResponse>> toggleFavorite(
             @AuthenticationPrincipal ChatUserPrincipal principal, @PathVariable("id") UUID id) {

@@ -11,11 +11,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SessionService {
 
     private final ChatSessionRepository chatSessionRepository;
@@ -30,6 +32,7 @@ public class SessionService {
                 .build();
 
         session = chatSessionRepository.save(session);
+        log.info("Created session with id: {}", session.getId());
         return toResponse(session, 0);
     }
 
@@ -59,6 +62,7 @@ public class SessionService {
         session.setSessionName(request.name());
         session = chatSessionRepository.save(session);
         int messageCount = (int) chatMessageRepository.countBySession(session);
+        log.info("Session with id: {} renamed successfully", sessionId);
         return toResponse(session, messageCount);
     }
 
@@ -70,6 +74,7 @@ public class SessionService {
 
         session.setFavorite(!session.isFavorite());
         session = chatSessionRepository.save(session);
+        log.info("Session with id: {} favorite status toggled successfully", sessionId);
         int messageCount = (int) chatMessageRepository.countBySession(session);
         return toResponse(session, messageCount);
     }

@@ -1,4 +1,4 @@
-import { get, post, put, del } from './api'
+import { get, post, patch, del } from './api'
 import type { ApiResponse } from '../types/api.types'
 import type { Session, CreateSessionRequest, RenameSessionRequest } from '../types/session.types'
 
@@ -15,12 +15,12 @@ export async function createSession(payload: CreateSessionRequest) {
 }
 
 export async function renameSession(id: string, payload: RenameSessionRequest) {
-  const response = await put<Session, RenameSessionRequest>(`${BASE_PATH}/${id}/rename`, payload)
+  const response = await patch<Session, RenameSessionRequest>(`${BASE_PATH}/${id}/rename`, payload)
   return response as ApiResponse<Session>
 }
 
 export async function toggleFavorite(id: string) {
-  const response = await put<Session, void>(`${BASE_PATH}/${id}/favorite`)
+  const response = await patch<Session, void>(`${BASE_PATH}/${id}/favorite`)
   return response as ApiResponse<Session>
 }
 
