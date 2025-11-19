@@ -15,18 +15,12 @@ import lombok.Setter;
 @Builder
 public class ChatMessageContext {
 
-    /**
-     * Source of the context, e.g. "session-documents" for RAG, or "client" for custom metadata.
-     */
+    /** Source of the context, e.g. "session-documents" for RAG, or "client" for custom metadata. */
     private String source;
 
-    /**
-     * Documents used as RAG context (if any).
-     */
+    /** Documents used as RAG context (if any). */
     private List<ContextDocument> documents;
 
-    /**
-     * Arbitrary additional context supplied by the client or internal callers.
-     */
+    /** Arbitrary additional context supplied by the client or internal callers. */
     private Map<String, Object> extra;
 }

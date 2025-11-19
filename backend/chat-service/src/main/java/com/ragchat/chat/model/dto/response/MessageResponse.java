@@ -5,8 +5,4 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record MessageResponse(
-        UUID id,
-        MessageSender sender,
-        String content,
-        Integer messageOrder,
-        LocalDateTime createdAt) {}
+        UUID id, MessageSender sender, String content, Integer messageOrder, LocalDateTime createdAt) {}

@@ -148,13 +148,11 @@ public class MessageService {
         promptBuilder.append(
                 "When you answer, respond only with the answer text itself. Do not include any speaker labels like 'Assistant:' or 'User:' in your response.\n\n");
 
-
         return promptBuilder.toString();
     }
 
     private List<ChatMessage> loadRecentMessages(ChatMessage message, int limit) {
-        List<ChatMessage> allMessages =
-                chatMessageRepository.findBySessionOrderByMessageOrderAsc(message.getSession());
+        List<ChatMessage> allMessages = chatMessageRepository.findBySessionOrderByMessageOrderAsc(message.getSession());
         if (allMessages.isEmpty() || limit <= 0) {
             return Collections.emptyList();
         }
